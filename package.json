@@ -1,0 +1,20 @@
+{
+  "name": "torrento",
+  "version": "1.0.0",
+  "description": "Application CLI de téléchargement de fichiers torrent pour Windows et Linux (Debian)",
+  "main": "index.js",
+  "bin": {
+    "torrento": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "webtorrent": "^1.10.0",
+    "yargs": "^17.7.2",
+    "express": "^4.18.2",
+    "multer": "^1.4.5"
+  }
+}
