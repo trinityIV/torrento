@@ -38,6 +38,7 @@ docker run -d \
   -v "$HOST_UPLOADS":/app/uploads \
   -e PUBLIC_URL="$PUBLIC_URL" \
   -e DOCKER=1 \
+  --restart unless-stopped \
   --name $CONTAINER_NAME \
   $IMAGE_NAME
 
