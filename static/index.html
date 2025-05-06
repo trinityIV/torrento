@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Trinity - Redirection</title>
+  <meta http-equiv="refresh" content="0; url=%PUBLIC_URL%">
+  <script>
+    fetch('/.env').then(r=>r.text()).then(txt=>{
+      const url = (txt.match(/PUBLIC_URL=(.*)/)||[])[1] || 'http://localhost:3000';
+      window.location.replace(url);
+    });
+  </script>
+</head>
+<body>
+  <p>Redirection vers Trinity...</p>
+</body>
+</html>
