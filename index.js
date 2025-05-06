@@ -67,6 +67,13 @@ app.get('/', (req, res) => {
           font-family: 'Share Tech Mono', monospace;
           overflow: hidden;
         }
+        #bg-canvas {
+          position: fixed;
+          top: 0; left: 0; width: 100vw; height: 100vh;
+          z-index: 0;
+          display: block;
+          pointer-events: none;
+        }
         .container {
           position: relative; z-index: 2;
           max-width: 440px; margin: 60px auto 0 auto;
@@ -126,6 +133,7 @@ app.get('/', (req, res) => {
       </style>
     </head>
     <body>
+      <canvas id="bg-canvas"></canvas>
       <div class="container">
         <h1>Trinity</h1>
         <form method="POST" action="/upload-torrent" enctype="multipart/form-data">
@@ -139,6 +147,65 @@ app.get('/', (req, res) => {
           <span>&#x1F916; Trinity &mdash; Game Hacking UI</span>
         </div>
       </div>
+      <script>
+        // Animation toile d'araignée
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let w = window.innerWidth, h = window.innerHeight;
+        function resize() {
+          w = window.innerWidth; h = window.innerHeight;
+          canvas.width = w; canvas.height = h;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const POINTS = 48, DIST = 120, SPEED = 0.4;
+        let pts = [];
+        for(let i=0;i<POINTS;i++) {
+          pts.push({
+            x: Math.random()*w,
+            y: Math.random()*h,
+            vx: (Math.random()-0.5)*SPEED,
+            vy: (Math.random()-0.5)*SPEED
+          });
+        }
+        function draw() {
+          ctx.clearRect(0,0,w,h);
+          // Draw lines
+          for(let i=0;i<POINTS;i++) {
+            for(let j=i+1;j<POINTS;j++) {
+              let dx = pts[i].x-pts[j].x, dy = pts[i].y-pts[j].y;
+              let d = Math.sqrt(dx*dx+dy*dy);
+              if(d < DIST) {
+                ctx.strokeStyle = "rgba(58,210,159,"+(1-d/DIST)*0.35+")";
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                ctx.moveTo(pts[i].x, pts[i].y);
+                ctx.lineTo(pts[j].x, pts[j].y);
+                ctx.stroke();
+              }
+            }
+          }
+          // Draw points
+          for(let i=0;i<POINTS;i++) {
+            ctx.beginPath();
+            ctx.arc(pts[i].x, pts[i].y, 2.2, 0, 2*Math.PI);
+            ctx.fillStyle = "#3ad29f";
+            ctx.fill();
+          }
+        }
+        function step() {
+          for(let i=0;i<POINTS;i++) {
+            pts[i].x += pts[i].vx;
+            pts[i].y += pts[i].vy;
+            if(pts[i].x < 0 || pts[i].x > w) pts[i].vx *= -1;
+            if(pts[i].y < 0 || pts[i].y > h) pts[i].vy *= -1;
+          }
+          draw();
+          requestAnimationFrame(step);
+        }
+        step();
+      </script>
     </body>
     </html>
   `);
