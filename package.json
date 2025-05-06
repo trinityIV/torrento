@@ -15,6 +15,6 @@
     "webtorrent": "^1.10.0",
     "yargs": "^17.7.2",
     "express": "^4.18.2",
-    "multer": "^1.4.5"
+    "multer": "^1.4.5-lts.1"
   }
 }
