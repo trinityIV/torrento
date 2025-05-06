@@ -5,6 +5,7 @@ set -e
 IMAGE_NAME="trinity-torrent"
 CONTAINER_NAME="trinity"
 HOST_DOWNLOADS="$(pwd)/downloads"
+HOST_UPLOADS="$(pwd)/uploads"
 
 # Fonction pour arrêter et supprimer l'ancien conteneur si présent
 cleanup_container() {
@@ -16,21 +17,30 @@ cleanup_container() {
   fi
 }
 
-echo "[Trinity] Création du dossier de téléchargements..."
-mkdir -p "$HOST_DOWNLOADS"
+echo "[Trinity] Création des dossiers de téléchargements et uploads..."
+mkdir -p "$HOST_DOWNLOADS" "$HOST_UPLOADS"
 
 echo "[Trinity] Construction de l'image Docker..."
 docker build -t $IMAGE_NAME .
 
 cleanup_container
 
-echo "[Trinity] Lancement du conteneur..."
+# Détection automatique de l'IP locale pour PUBLIC_URL si non fourni
+if [ -z "$PUBLIC_URL" ]; then
+  IP=$(hostname -I | awk '{print $1}')
+  PUBLIC_URL="http://$IP:3000"
+fi
+
+echo "[Trinity] Lancement du conteneur avec PUBLIC_URL=$PUBLIC_URL ..."
 docker run -d \
   -p 3000:3000 \
   -v "$HOST_DOWNLOADS":/app/downloads \
+  -v "$HOST_UPLOADS":/app/uploads \
+  -e PUBLIC_URL="$PUBLIC_URL" \
+  -e DOCKER=1 \
   --name $CONTAINER_NAME \
   $IMAGE_NAME
 
 echo
-echo "[Trinity] L'application est disponible sur : http://localhost:3000"
+echo "[Trinity] L'application est disponible sur : $PUBLIC_URL"
 echo "[Trinity] Les téléchargements seront stockés dans : $HOST_DOWNLOADS"

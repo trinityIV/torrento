@@ -6,23 +6,43 @@ const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const multer = require('multer');
+const os = require('os');
 require('dotenv').config();
 
 const app = express();
 const upload = multer({ dest: 'uploads/' });
 const PORT = process.env.PORT || 3000;
 const DOWNLOAD_DIR = './downloads';
-const PUBLIC_URL = process.env.PUBLIC_URL || `http://localhost:${PORT}`;
+
+// Création automatique des dossiers nécessaires
+[DOWNLOAD_DIR, './uploads'].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
+
+// Détection automatique de l'URL publique en Docker si non définie
+function getDockerHostIP() {
+  // Cherche une IP locale non loopback (pour usage interne Docker)
+  const nets = os.networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return 'localhost';
+}
+const PUBLIC_URL = process.env.PUBLIC_URL ||
+  (process.env.DOCKER && `http://${getDockerHostIP()}:${PORT}`) ||
+  `http://localhost:${PORT}`;
 
 const client = new WebTorrent();
 const downloads = {};
 
 function generateId() {
   return Math.random().toString(36).substring(2, 10) + Date.now();
-}
-
-if (!fs.existsSync(DOWNLOAD_DIR)) {
-  fs.mkdirSync(DOWNLOAD_DIR, { recursive: true });
 }
 
 app.use(express.urlencoded({ extended: true }));
@@ -319,6 +339,15 @@ app.get('/api/progress/:id', (req, res) => {
   });
 });
 
+// Sert le fichier .env pour Cloudflare Pages (optionnel, sécurité à adapter si besoin)
+app.get('/.env', (req, res) => {
+  if (fs.existsSync('.env')) {
+    res.type('text/plain').send(fs.readFileSync('.env'));
+  } else {
+    res.type('text/plain').send(`PUBLIC_URL=${PUBLIC_URL}`);
+  }
+});
+
 // Mode CLI uniquement si des arguments sont fournis
 if (require.main === module && process.argv.length > 2) {
   const argv = yargs
@@ -353,5 +382,12 @@ if (require.main === module && process.argv.length > 2) {
       console.log('\nTéléchargement terminé!');
       client.destroy();
     });
+  });
+}
+
+// Lancer le serveur Express si ce n'est pas le mode CLI
+if (require.main === module && process.argv.length <= 2) {
+  app.listen(PORT, () => {
+    console.log(`Trinity Web UI disponible sur http://0.0.0.0:${PORT}`);
   });
 }

@@ -77,6 +77,21 @@ Adaptez l’URL selon votre configuration réseau.
 - Interface web sur http://localhost:3000 (ou l’IP de votre serveur)
 - Les fichiers téléchargés sont dans `downloads/`
 
+### Utilisation automatisée avec Docker
+
+Pour tout lancer automatiquement :
+
+```bash
+./build_and_run_docker.sh
+```
+
+- L’URL publique est détectée automatiquement, ou vous pouvez la forcer :
+  ```bash
+  PUBLIC_URL="http://votre_ip_publique:3000" ./build_and_run_docker.sh
+  ```
+- Les dossiers `downloads` et `uploads` sont persistants sur votre machine.
+- L’interface web sera accessible sur l’URL affichée à la fin du script.
+
 ### Déploiement Cloudflare Pages (accès externe)
 
 - Uploadez le fichier `static/index.html` sur Cloudflare Pages.
