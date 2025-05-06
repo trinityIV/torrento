@@ -18,6 +18,12 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# Ajout : installation de archiver si non présent
+if ! npm list archiver >/dev/null 2>&1; then
+  echo "[Torrento] Installation de la dépendance archiver..."
+  npm install archiver
+fi
+
 echo
 echo "[Torrento] Installation terminée avec succès !"
 echo "Pour lancer l'application, utilisez :"

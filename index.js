@@ -7,6 +7,7 @@ const fs = require('fs');
 const express = require('express');
 const multer = require('multer');
 const os = require('os');
+const archiver = require('archiver');
 require('dotenv').config();
 
 const app = express();
@@ -50,7 +51,7 @@ app.use(express.json());
 app.use('/downloads', express.static(path.resolve(DOWNLOAD_DIR)));
 app.use('/static', express.static(path.join(__dirname, 'static')));
 
-// Page principale
+// Page principale simplifiée
 app.get('/', (req, res) => {
   res.send(`
     <html>
@@ -65,9 +66,6 @@ app.get('/', (req, res) => {
           background: #181c1f;
           font-family: 'Share Tech Mono', monospace;
           overflow: hidden;
-        }
-        .spider-bg {
-          position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none;
         }
         .container {
           position: relative; z-index: 2;
@@ -86,17 +84,11 @@ app.get('/', (req, res) => {
           color: #3ad29f;
           text-shadow: 0 0 8px #3ad29f44;
         }
-        .subtitle {
-          text-align: center;
-          color: #baffc9;
-          margin-bottom: 28px;
-          font-size: 1.1em;
-        }
-        label, input, button, select {
+        label, input, button {
           font-family: inherit;
           font-size: 1em;
         }
-        input[type="text"], input[type="file"], select {
+        input[type="file"], input[type="text"] {
           background: #222;
           color: #3ad29f;
           border: 1px solid #3ad29f;
@@ -106,7 +98,7 @@ app.get('/', (req, res) => {
           margin-bottom: 14px;
           outline: none;
         }
-        input[type="text"]:focus, input[type="file"]:focus, select:focus {
+        input[type="file"]:focus, input[type="text"]:focus {
           border-color: #baffc9;
         }
         button {
@@ -118,12 +110,12 @@ app.get('/', (req, res) => {
           cursor: pointer;
           transition: background 0.2s, color 0.2s;
           margin-top: 4px;
+          width: 100%;
         }
         button:hover {
           background: #3ad29f;
           color: #181c1f;
         }
-        form { margin-bottom: 18px; }
         .footer {
           text-align: center;
           color: #baffc9;
@@ -131,89 +123,22 @@ app.get('/', (req, res) => {
           font-size: 0.95em;
           opacity: 0.7;
         }
-        ::selection { background: #3ad29f; color: #181c1f; }
-        .progress-link { color: #baffc9; font-size: 0.98em; }
       </style>
     </head>
     <body>
-      <div class="spider-bg"><canvas id="spiderCanvas"></canvas></div>
       <div class="container">
         <h1>Trinity</h1>
-        <div class="subtitle">Torrent Loader - Game Hacking Edition</div>
-        <form method="POST" action="/add-magnet">
-          <label for="magnet">Lien magnet :</label>
-          <input type="text" name="magnet" id="magnet" placeholder="magnet:?xt=..." required>
-          <label for="dest">Répertoire de destination :</label>
-          <input type="text" name="dest" id="dest" placeholder="downloads (défaut)" />
-          <button type="submit">&#x1F50E; Télécharger sur le serveur</button>
-        </form>
         <form method="POST" action="/upload-torrent" enctype="multipart/form-data">
-          <label for="torrentfile">Fichier .torrent :</label>
+          <label for="torrentfile">Choisir un fichier .torrent :</label>
           <input type="file" name="torrentfile" id="torrentfile" accept=".torrent" required>
-          <label for="dest2">Répertoire de destination :</label>
-          <input type="text" name="dest" id="dest2" placeholder="downloads (défaut)" />
-          <button type="submit">&#128187; Télécharger sur le serveur</button>
-        </form>
-        <form id="direct-dl-form" onsubmit="return handleDirectDownload(event)">
-          <label for="magnet2">Lien magnet :</label>
-          <input type="text" name="magnet2" id="magnet2" placeholder="magnet:?xt=..." required>
-          <button type="submit">&#x2B07; Télécharger sur ce PC</button>
+          <label for="dest">Dossier de destination (serveur) :</label>
+          <input type="text" name="dest" id="dest" placeholder="downloads (défaut)" />
+          <button type="submit">&#128187; Télécharger</button>
         </form>
         <div class="footer">
           <span>&#x1F916; Trinity &mdash; Game Hacking UI</span>
         </div>
       </div>
-      <script>
-        // Spider web animation
-        const canvas = document.getElementById('spiderCanvas');
-        const ctx = canvas.getContext('2d');
-        let w = window.innerWidth, h = window.innerHeight;
-        function resize() { w = window.innerWidth; h = window.innerHeight; canvas.width = w; canvas.height = h; }
-        window.addEventListener('resize', resize); resize();
-        // Web points and lines
-        let points = [];
-        for(let i=0;i<24;i++) points.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-0.5)*0.7,vy:(Math.random()-0.5)*0.7});
-        function drawWeb() {
-          ctx.clearRect(0,0,w,h);
-          for(let i=0;i<points.length;i++) {
-            let p = points[i];
-            p.x += p.vx; p.y += p.vy;
-            if(p.x<0||p.x>w) p.vx*=-1;
-            if(p.y<0||p.y>h) p.vy*=-1;
-            for(let j=i+1;j<points.length;j++) {
-              let q = points[j];
-              let dx = p.x-q.x, dy = p.y-q.y, dist = Math.sqrt(dx*dx+dy*dy);
-              if(dist<180) {
-                ctx.strokeStyle = "rgba(58,210,159,"+(1-dist/180)+")";
-                ctx.lineWidth = 1.2;
-                ctx.beginPath();
-                ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y); ctx.stroke();
-              }
-            }
-            ctx.fillStyle = "#3ad29f";
-            ctx.beginPath(); ctx.arc(p.x,p.y,2,0,2*Math.PI); ctx.fill();
-          }
-        }
-        function animate() { drawWeb(); requestAnimationFrame(animate);}
-        animate();
-
-        // Direct download handler
-        function handleDirectDownload(e) {
-          e.preventDefault();
-          const magnet = document.getElementById('magnet2').value;
-          fetch('/direct-download', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({magnet})
-          })
-          .then(r=>r.json())
-          .then(data=>{
-            if(data.error) alert(data.error);
-            else window.location = data.url;
-          });
-          return false;
-        }
-      </script>
     </body>
     </html>
   `);
@@ -290,6 +215,7 @@ app.get('/progress/:id', (req, res) => {
         .fill { background: #3ad29f; height: 100%; border-radius: 6px; transition: width 0.3s; }
         .done { color: #baffc9; font-size: 1.2em; margin-top: 18px; }
         a { color: #3ad29f; }
+        .zip-link { display: block; margin-top: 18px; font-size: 1.1em; }
       </style>
     </head>
     <body>
@@ -310,7 +236,9 @@ app.get('/progress/:id', (req, res) => {
               document.getElementById('percent').textContent = (d.progress*100).toFixed(2) + "%";
               if(d.done) {
                 document.getElementById('done').innerHTML = '<div class="done">Téléchargement terminé !<br>' +
-                  d.files.map(f=>'<a href="'+f.url+'" download>'+f.name+'</a>').join('<br>')+'</div>';
+                  d.files.map(f=>'<a href="'+f.url+'" download>'+f.name+'</a>').join('<br>')
+                  + '<a class="zip-link" href="/download-zip/${id}">&#128230; Télécharger tout en ZIP</a>'
+                  + '</div>';
               } else {
                 setTimeout(update, 1200);
               }
@@ -339,6 +267,28 @@ app.get('/api/progress/:id', (req, res) => {
   });
 });
 
+// Route pour télécharger tous les fichiers en ZIP
+app.get('/download-zip/:id', (req, res) => {
+  const id = req.params.id;
+  const d = downloads[id];
+  if (!d || !d.done || !d.files || d.files.length === 0) {
+    return res.status(404).send('Aucun fichier à zipper.');
+  }
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="${(d.name || 'download')}.zip"`);
+
+  const archive = archiver('zip', { zlib: { level: 9 } });
+  archive.on('error', err => res.status(500).send({ error: err.message }));
+
+  archive.pipe(res);
+  d.files.forEach(filePath => {
+    // Ajoute chaque fichier dans le zip, en gardant la structure relative au dossier du torrent
+    const relPath = path.relative(path.dirname(d.files[0]), filePath);
+    archive.file(filePath, { name: relPath });
+  });
+  archive.finalize();
+});
+
 // Sert le fichier .env pour Cloudflare Pages (optionnel, sécurité à adapter si besoin)
 app.get('/.env', (req, res) => {
   if (fs.existsSync('.env')) {
@@ -352,6 +302,7 @@ app.get('/.env', (req, res) => {
 if (require.main === module && process.argv.length > 2) {
   const argv = yargs
     .usage('Usage: $0 --torrent <fichier.torrent|magnet> [--output <dossier>]')
+
     .option('torrent', {
       alias: 't',
       describe: 'Chemin du fichier .torrent ou lien magnet',

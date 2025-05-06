@@ -7,6 +7,12 @@ CONTAINER_NAME="trinity"
 HOST_DOWNLOADS="$(pwd)/downloads"
 HOST_UPLOADS="$(pwd)/uploads"
 
+# Vérification de la dépendance archiver dans package.json
+if ! grep -q '"archiver"' package.json; then
+  echo "[Trinity] Ajout de la dépendance archiver dans package.json..."
+  npm install archiver
+fi
+
 # Fonction pour arrêter et supprimer l'ancien conteneur si présent
 cleanup_container() {
   if docker ps -a --format '{{.Names}}' | grep -Eq "^${CONTAINER_NAME}\$"; then
